@@ -8,6 +8,10 @@
 - 服务器重启后自动恢复服务。
 - 用户数据、JupyterHub 数据、Admin 数据、策略文件都落在宿主机持久目录。
 
+如果是从一台新服务器开始部署，先看
+[server-migration.md](server-migration.md)，里面包含 Docker 安装、GitHub
+拉取、首次启动、反向代理、全局模型配置和更新流程。
+
 ## 1. 准备服务器
 
 建议部署路径：

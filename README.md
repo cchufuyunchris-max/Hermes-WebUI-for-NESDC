@@ -21,6 +21,10 @@ operations, smoke tests, logs, and single-user reset scripts.
 See [docs/deployment-config.md](docs/deployment-config.md) for environment
 configuration, server migration, and externalized settings.
 
+See [docs/server-migration.md](docs/server-migration.md) for the complete
+GitHub-to-server migration checklist, including Docker installation, first
+startup, reverse proxy, model policy sync, and update flow.
+
 See [docs/server-ops.md](docs/server-ops.md) for 24h server startup,
 systemd-managed Docker Compose, logs, updates, and backup guidance.
 

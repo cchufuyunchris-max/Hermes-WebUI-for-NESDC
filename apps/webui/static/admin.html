@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hermes 管理后台</title>
+<script>(function(){var path=location.pathname,p=(path.endsWith('/')?path:(path.replace(/\/[^\/]*$/,'/')||'/'));if(p.endsWith('/static/'))p=p.slice(0,-7);window.__HERMES_BASE_PATH__=p||'/';document.write('<base href="'+location.origin+(p||'/')+'">');})()</script>
+<link rel="icon" type="image/png" sizes="32x32" href="static/favicon-32.png">
+<link rel="stylesheet" href="static/admin.css?v=__WEBUI_VERSION__">
+<script>window.__HERMES_ADMIN_CONFIG__={csrfToken:__CSRF_TOKEN_JSON__};</script>
+</head>
+<body>
+<div class="admin-shell">
+  <aside class="admin-nav">
+    <div class="brand">
+      <img src="static/favicon-32.png" alt="">
+      <div>
+        <strong>Hermes Admin</strong>
+        <span id="policyPath">Policy</span>
+      </div>
+    </div>
+    <button class="nav-btn active" data-section="overview">概览</button>
+    <button class="nav-btn" data-section="models">模型策略</button>
+    <button class="nav-btn" data-section="skills">推荐 Skill</button>
+    <button class="nav-btn" data-section="connectors">数据连接</button>
+    <button class="nav-btn" data-section="resources">用户与资源</button>
+    <button class="nav-btn" data-section="audit">审计日志</button>
+    <button class="nav-btn" data-section="json">原始 JSON</button>
+    <div class="nav-spacer"></div>
+    <a class="nav-link" href="./">返回 WebUI</a>
+  </aside>
+
+  <main class="admin-main">
+    <header class="topbar">
+      <div>
+        <h1>后台管理</h1>
+        <p>管理模型档位、通用数据连接、MCP、审计与用户容器资源策略。</p>
+      </div>
+      <div class="top-actions">
+        <input id="adminToken" type="password" placeholder="Admin Token">
+        <button id="reloadBtn" class="ghost-btn" type="button">刷新</button>
+        <button id="applyAllBtn" class="ghost-btn" type="button">应用到所有用户</button>
+        <button id="saveBtn" class="primary-btn" type="button">保存策略</button>
+      </div>
+    </header>
+
+    <div id="statusBar" class="status-bar">加载中...</div>
+
+    <section class="section active" id="section-overview">
+      <div class="metric-grid">
+        <div class="metric"><span>启用状态</span><strong id="metricEnabled">-</strong></div>
+        <div class="metric"><span>默认模型档位</span><strong id="metricDefaultTier">-</strong></div>
+        <div class="metric"><span>数据连接</span><strong id="metricConnectors">-</strong></div>
+        <div class="metric"><span>审计</span><strong id="metricAudit">-</strong></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <h2>安全边界</h2>
+        </div>
+        <div class="check-list">
+          <label><input id="enabled" type="checkbox" checked> 允许用户使用 Hermes Runtime</label>
+          <label><input id="runtimePrivacyGuard" type="checkbox" checked> 启用 Runtime Privacy Guard</label>
+          <label><input id="allowTerminalNetwork" type="checkbox"> 允许终端外联命令</label>
+          <label><input id="allowCodeNetwork" type="checkbox"> 允许代码执行外联</label>
+          <label><input id="allowUserModelSettings" type="checkbox" checked> 允许用户修改任意模型供应商</label>
+          <label><input id="allowUserOnlineKey" type="checkbox" checked> 允许用户为在线模型配置自己的 API Key</label>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="section-models">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>全局 Hermes Agent 模型</h2>
+        </div>
+        <p class="panel-hint">这里配置的是所有用户 Hermes Agent 启动时写入 <code>${HERMES_HOME}/config.yaml</code> 的原生字段。保存后会进入全局策略；新建或重建的用户容器会同步，已运行用户需要重新 Spawn。</p>
+        <div class="form-grid">
+          <label>model.provider<input id="localProvider" placeholder="deepseek"></label>
+          <label>model.default<input id="localModelId" placeholder="deepseek-v4-flash"></label>
+          <label>model.base_url<input id="localBaseUrl" placeholder="https://api.deepseek.com/v1"></label>
+          <label>model.api_key<input id="localApiKey" type="password" placeholder="********"></label>
+        </div>
+        <p class="panel-hint">实际保存位置：<code>model_policy.local_model</code>。用户容器启动时会转换为 <code>model.provider/default/base_url/api_key</code>。</p>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <h2>用户可选模型</h2>
+        </div>
+        <p class="panel-hint">推荐选择“混合路由”：用户可以在 safe、quality、fast 档位之间选择；敏感数据、数据库、终端、代码执行、私有 MCP 工具会强制走 safe 档位，在线档位只用于非隐私任务。</p>
+        <div class="form-grid">
+          <label>策略模式<select id="modelMode"><option value="privacy-router">混合路由：隐私本地，普通可在线</option><option value="local-only">只用本地模型</option><option value="gateway">统一模型网关路由</option></select></label>
+          <label>用户默认选择<select id="defaultTier"><option value="safe">本地安全 safe</option><option value="quality">在线高质量 quality</option><option value="fast">在线快速 fast</option></select></label>
+          <label>用户可选档位<input id="allowedTiers" placeholder="safe,quality,fast"></label>
+          <label>路由 Provider<input id="gatewayProvider" placeholder="deepseek"></label>
+          <label>safe 档位模型<input id="tierSafe" placeholder="deepseek-v4-flash"></label>
+          <label>quality 在线模型 ID<input id="tierQuality" placeholder="online-quality"></label>
+          <label>fast 在线模型 ID<input id="tierFast" placeholder="online-fast"></label>
+          <label>在线档位允许工具<input id="onlineAllowedToolsets" placeholder="web,vision,clarify,todo,image_gen"></label>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="section-skills">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>从 GitHub 导入</h2>
+        </div>
+        <p class="panel-hint">填写 GitHub 仓库地址，后台会扫描仓库中的 SKILL.md，并发布到推荐 Skill Hub。不会执行仓库里的代码。</p>
+        <div class="form-grid github-import-grid">
+          <label>GitHub 仓库 URL<input id="githubSkillUrl" placeholder="https://github.com/Yuan1z0825/nature-skills"></label>
+          <label>Ref / 分支<input id="githubSkillRef" placeholder="main"></label>
+          <label>子目录<input id="githubSkillSubdir" placeholder="可选，例如 skills"></label>
+          <label>目录前缀<input id="githubSkillPrefix" placeholder="可选，例如 nature"></label>
+        </div>
+        <div class="editor-actions">
+          <label class="inline-check"><input id="githubSkillOverwrite" type="checkbox"> 覆盖同名推荐 Skill</label>
+          <button id="importGithubSkillBtn" class="primary-btn" type="button">导入 GitHub Skill</button>
+        </div>
+        <div id="githubImportResult" class="import-result" hidden></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <h2>推荐 Skill</h2>
+          <div class="panel-actions">
+            <button id="reloadSkillsBtn" class="ghost-btn" type="button">刷新</button>
+            <button id="newSkillBtn" class="ghost-btn" type="button">新建 Skill</button>
+          </div>
+        </div>
+        <div class="skill-admin-layout">
+          <div id="adminSkillList" class="admin-skill-list"></div>
+          <div class="admin-skill-editor">
+            <div class="form-grid">
+              <label>目录 ID<input id="skillId" placeholder="eco-report"></label>
+              <label>名称<input id="skillName" placeholder="eco-report"></label>
+              <label>版本<input id="skillVersion" placeholder="1.0.0"></label>
+              <label>标签<input id="skillTags" placeholder="report,analysis"></label>
+            </div>
+            <label class="full-label">描述<input id="skillDescription" placeholder="这个 Skill 会出现在用户 Skill Hub 推荐里"></label>
+            <label class="full-label">SKILL.md<textarea id="skillContent" spellcheck="false"></textarea></label>
+            <div class="editor-actions">
+              <button id="saveSkillBtn" class="primary-btn" type="button">发布 / 保存</button>
+              <button id="deleteSkillBtn" class="ghost-btn danger-btn" type="button">删除</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="section-connectors">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>数据连接</h2>
+          <button id="addConnectorBtn" class="ghost-btn" type="button">新增连接</button>
+        </div>
+        <div class="connector-toolbar">
+          <label><input id="auditEnabled" type="checkbox" checked> 启用数据工具审计</label>
+          <label><input id="enforceManagedMcp" type="checkbox" checked> 启动时覆盖用户 MCP 配置</label>
+          <input id="auditPath" placeholder="/home/hermes/data/audit/data-tools.jsonl">
+        </div>
+        <div id="connectorsList" class="connector-list"></div>
+      </div>
+    </section>
+
+    <section class="section" id="section-resources">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>全局默认资源</h2>
+        </div>
+        <p class="panel-hint">这里是所有用户默认的容器资源。单个用户需要扩容时，在下方添加用户覆盖策略；覆盖策略会在用户下次 Spawn 时生效。</p>
+        <div class="form-grid">
+          <label>CPU 限制<input id="cpuLimit" type="number" min="0.25" step="0.25"></label>
+          <label>内存限制<input id="memoryLimit" placeholder="4g"></label>
+          <label>磁盘配额 bytes<input id="diskQuota" type="number" min="0" step="1"></label>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <h2>用户与资源</h2>
+          <div class="panel-actions">
+            <button id="reloadUsersBtn" class="ghost-btn" type="button">刷新</button>
+            <button id="newUserBtn" class="ghost-btn" type="button">新增用户覆盖</button>
+          </div>
+        </div>
+        <div class="metric-grid compact-metrics">
+          <div class="metric"><span>用户总数</span><strong id="metricUsers">-</strong></div>
+          <div class="metric"><span>总占用空间</span><strong id="metricUserUsage">-</strong></div>
+          <div class="metric"><span>接近配额</span><strong id="metricUserWarnings">-</strong></div>
+          <div class="metric"><span>用户数据根目录</span><strong id="metricUserRoot">-</strong></div>
+        </div>
+        <div id="adminUserList" class="admin-user-table"></div>
+        <details class="user-editor-panel" open>
+          <summary>用户覆盖编辑</summary>
+          <div class="admin-user-editor">
+            <div id="userUsageSummary" class="usage-summary">选择一个用户后查看空间占用。</div>
+            <div class="form-grid">
+              <label>用户 ID<input id="userPolicyId" placeholder="alice"></label>
+              <label>启用 Hermes<select id="userPolicyEnabled"><option value="true">启用</option><option value="false">禁用</option></select></label>
+              <label>CPU 限制<input id="userCpuLimit" type="number" min="0.25" step="0.25" placeholder="4"></label>
+              <label>内存限制<input id="userMemoryLimit" placeholder="8g"></label>
+              <label>磁盘配额 bytes<input id="userDiskQuota" type="number" min="0" step="1" placeholder="53687091200"></label>
+            </div>
+            <div class="editor-actions">
+              <button id="saveUserBtn" class="primary-btn" type="button">保存用户覆盖</button>
+              <button id="rebuildUserRuntimeBtn" class="ghost-btn" type="button">重建该用户容器</button>
+              <button id="deleteUserBtn" class="ghost-btn danger-btn" type="button">删除覆盖</button>
+              <button id="deleteUserDataBtn" class="ghost-btn danger-btn" type="button">删除用户及数据</button>
+            </div>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section class="section" id="section-audit">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>最近数据工具审计</h2>
+          <button id="loadAuditBtn" class="ghost-btn" type="button">加载审计</button>
+        </div>
+        <div class="table" id="auditTable"></div>
+      </div>
+    </section>
+
+    <section class="section" id="section-json">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>原始策略 JSON</h2>
+          <button id="formatJsonBtn" class="ghost-btn" type="button">格式化</button>
+        </div>
+        <textarea id="rawJson" spellcheck="false"></textarea>
+      </div>
+    </section>
+  </main>
+</div>
+
+<template id="connectorTemplate">
+  <article class="connector-card">
+    <div class="connector-head">
+      <div>
+        <strong class="connector-title">Connector</strong>
+        <span class="connector-sub">read-only</span>
+      </div>
+      <div class="connector-actions">
+        <label><input data-field="enabled" type="checkbox"> 启用</label>
+        <button data-action="remove" class="icon-btn" type="button" title="删除">×</button>
+      </div>
+    </div>
+    <div class="form-grid">
+      <label>ID<input data-field="id" placeholder="clickhouse-readonly"></label>
+      <label>类型<select data-field="type"></select></label>
+      <label>隐私等级<select data-field="privacy_level"><option value="private">private</option><option value="public">public</option></select></label>
+      <label>访问模式<select data-field="access_mode"><option value="read-only">read-only</option><option value="read">read</option><option value="ro">ro</option></select></label>
+      <label>Host / Base URL<input data-field="host_or_base_url" placeholder="clickhouse.internal 或 http://dify.internal"></label>
+      <label>Port<input data-field="port" placeholder="8123"></label>
+      <label>Database / App ID<input data-field="database_or_app_id" placeholder="default 或 app_id"></label>
+      <label>User<input data-field="user" placeholder="readonly"></label>
+      <label>Password / API Key<input data-field="secret" type="password" placeholder="********"></label>
+    </div>
+    <details class="mcp-box">
+      <summary>MCP 配置</summary>
+      <div class="form-grid">
+        <label><input data-field="mcp_enabled" type="checkbox"> 启用 MCP</label>
+        <label>MCP Server Name<input data-field="mcp_server_name" placeholder="clickhouse-readonly"></label>
+        <label>MCP Command<input data-field="mcp_command" placeholder="clickhouse-mcp-server"></label>
+        <label>MCP Args<input data-field="mcp_args" placeholder="--readonly"></label>
+      </div>
+      <label class="full-label">MCP Env JSON<textarea data-field="mcp_env" spellcheck="false" placeholder='{"CLICKHOUSE_READONLY":"1"}'></textarea></label>
+    </details>
+  </article>
+</template>
+
+<script src="static/admin.js?v=__WEBUI_VERSION__"></script>
+</body>
+</html>

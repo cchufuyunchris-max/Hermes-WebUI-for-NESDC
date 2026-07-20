@@ -1,0 +1,40 @@
+{
+  "enabled": true,
+  "resources": {
+    "cpu_limit": 0,
+    "memory_limit": "",
+    "disk_quota_bytes": 0
+  },
+  "model_policy": {
+    "allow_user_model_settings": true,
+    "allow_user_online_model_api_key": true,
+    "runtime_privacy_guard_enabled": true,
+    "online_allowed_toolsets": [],
+    "public_mcp_tool_prefixes": [],
+    "allow_terminal_network": false,
+    "allow_code_network": false,
+    "mode": "privacy-router",
+    "default_tier": "safe",
+    "allowed_tiers": [],
+    "gateway_provider": "",
+    "local_model": {
+      "provider": "openai-compatible",
+      "base_url": "http://host.docker.internal:3001/v1",
+      "api_key": "",
+      "model": "local-private-default"
+    },
+    "tiers": {
+      "safe": "",
+      "quality": "",
+      "fast": ""
+    }
+  },
+  "data_connectors": {
+    "audit": {
+      "enabled": true,
+      "log_path": ""
+    },
+    "enforce_managed_mcp_servers": true,
+    "connectors": []
+  }
+}

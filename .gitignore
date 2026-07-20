@@ -1,0 +1,11 @@
+.data/
+node_modules/
+dist/
+build/
+*.log
+.DS_Store
+__pycache__/
+*.py[cod]
+configs/local.env
+configs/server.env
+configs/*.secret.env

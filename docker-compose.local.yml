@@ -1,0 +1,85 @@
+services:
+  jupyterhub:
+    build:
+      context: .
+      dockerfile: docker/jupyterhub/Dockerfile
+    container_name: hermes-jupyterhub
+    env_file:
+      - configs/.env.example
+      - ${HERMES_COMPOSE_ENV_FILE:-configs/local.env}
+    environment:
+      JUPYTERHUB_ADMIN_USERS: ${JUPYTERHUB_ADMIN_USERS:-admin}
+      JUPYTERHUB_ALLOW_ALL: ${JUPYTERHUB_ALLOW_ALL:-true}
+      JUPYTERHUB_OPEN_SIGNUP: ${JUPYTERHUB_OPEN_SIGNUP:-true}
+      JUPYTERHUB_COOKIE_SECRET_FILE: /srv/jupyterhub-data/jupyterhub_cookie_secret
+      JUPYTERHUB_DB_URL: sqlite:////srv/jupyterhub-data/jupyterhub.sqlite
+      HERMES_RUNTIME_IMAGE: ${HERMES_RUNTIME_IMAGE:-hermes-runtime:local}
+      HERMES_USER_DATA_ROOT: /srv/hermes/users
+      HERMES_HOST_USER_DATA_ROOT: ${HERMES_HOST_USER_DATA_ROOT}
+      HERMES_HOST_PROVISIONED_SKILLS_ROOT: ${HERMES_HOST_PROVISIONED_SKILLS_ROOT}
+      HERMES_AUTO_INSTALL_RECOMMENDED_SKILLS: ${HERMES_AUTO_INSTALL_RECOMMENDED_SKILLS:-false}
+      HERMES_POLICY_ROOT: /srv/hermes/policies
+    ports:
+      - "${HERMES_JUPYTERHUB_PORT:-8000}:8000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - "${HERMES_HOST_JUPYTERHUB_DATA_ROOT:-./.data/jupyterhub}:/srv/jupyterhub-data"
+      - "${HERMES_HOST_USER_DATA_ROOT:-./.data/users}:/srv/hermes/users"
+      - "${HERMES_HOST_POLICY_ROOT:-./configs/policies}:/srv/hermes/policies:ro"
+    networks:
+      - hermes-net
+    depends_on:
+      - hermes-runtime-build
+
+  hermes-runtime-build:
+    build:
+      context: .
+      dockerfile: docker/hermes-runtime/Dockerfile
+    image: hermes-runtime:local
+    entrypoint: ["/bin/true"]
+    networks:
+      - hermes-net
+
+  hermes-admin:
+    image: hermes-runtime:local
+    container_name: hermes-admin
+    user: root
+    env_file:
+      - configs/.env.example
+      - ${HERMES_COMPOSE_ENV_FILE:-configs/local.env}
+    environment:
+      APP_ENV: ${APP_ENV:-local}
+      PUBLIC_BASE_PATH: /
+      PORT: "8080"
+      HERMES_USER_ID: admin
+      HERMES_USER_NAME: Admin
+      HERMES_DATA_DIR: /home/hermes/data
+      HERMES_WEBUI_STATE_DIR: /home/hermes/data/webui
+      HERMES_WEBUI_DEFAULT_WORKSPACE: /home/hermes/data/workspace
+      HERMES_WEBUI_ONBOARDING_OPEN: ${HERMES_WEBUI_ONBOARDING_OPEN:-1}
+      HERMES_WEBUI_DEFAULT_THEME: ${HERMES_WEBUI_DEFAULT_THEME:-light}
+      HERMES_WEBUI_DEFAULT_LANGUAGE: ${HERMES_WEBUI_DEFAULT_LANGUAGE:-zh}
+      HERMES_WEBUI_PASSWORD: ${HERMES_ADMIN_PASSWORD:-local-admin}
+      HERMES_HOME: /home/hermes/data/hermes
+      HERMES_ADMIN_UI_ENABLED: "true"
+      HERMES_ADMIN_API_TOKEN: ${HERMES_ADMIN_API_TOKEN:-local-admin}
+      HERMES_ADMIN_POLICY_PATH: /srv/hermes/policies/global.json
+      HERMES_POLICY_ROOT: /srv/hermes/policies
+      HERMES_ADMIN_USER_DATA_ROOT: /srv/hermes/users
+      HERMES_ADMIN_DOCKER_SOCKET: /var/run/docker.sock
+    ports:
+      - "${HERMES_ADMIN_PORT:-8001}:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - "${HERMES_HOST_ADMIN_DATA_ROOT:-./.data/admin}:/home/hermes/data"
+      - "${HERMES_HOST_USER_DATA_ROOT:-./.data/users}:/srv/hermes/users"
+      - "${HERMES_HOST_POLICY_ROOT:-./configs/policies}:/srv/hermes/policies"
+      - "${HERMES_HOST_PROVISIONED_SKILLS_ROOT:-./skills}:/home/hermes/provisioned-skills"
+    networks:
+      - hermes-net
+    depends_on:
+      - hermes-runtime-build
+
+networks:
+  hermes-net:
+    name: hermes-net

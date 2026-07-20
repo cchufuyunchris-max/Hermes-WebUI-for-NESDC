@@ -1,0 +1,3 @@
+display_name: Eco Stations Climate Report
+short_description: Complete eco_stations climate annual reports with stitched figure panels.
+default_prompt: Generate a complete climate annual report from eco_stations, producing Markdown and PDF with all 12 climate figure groups.

@@ -1,0 +1,11 @@
+{
+  "name": "openclaw-medical-skills",
+  "title": "openclaw-medical-skills",
+  "description": "Codex adaptation of the OpenClaw Medical Skills library. Use for biomedical, clinical, healthcare AI, genomics, bioinformatics, drug discovery, pharmacovigilance, clinical trials, medical imaging, public health, medical device, regulatory, scientific data analysis, lab automation, and medical research workflows; also use when the user mentions OpenClaw Medical Skills, medical skill library, or any named capability preserved in the OpenClaw capability index.",
+  "version": "",
+  "source": "github",
+  "source_url": "https://github.com/Yuan1z0825/nature-skills",
+  "source_ref": "main",
+  "source_subdir": "skills/openclaw-medical-skills",
+  "imported_at": 1782454065
+}

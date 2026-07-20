@@ -1,0 +1,11 @@
+{
+  "name": "nature-paper-to-patent",
+  "title": "nature-paper-to-patent",
+  "description": "Convert scientific papers, theses, technical reports, source code, figures, or research manuscripts into evidence-grounded Chinese invention patent drafts. Use when an AI agent must extract patentable technical contributions, map every claimed feature to source evidence, preserve core formulas as editable Office Math, generate claim-aligned flowcharts and methodology figures, compare a paper with an existing patent, audit support and consistency, or deliver separate Chinese DOCX files for claims, specification, abstract, and abstract figure.",
+  "version": "",
+  "source": "github",
+  "source_url": "https://github.com/Yuan1z0825/nature-skills",
+  "source_ref": "main",
+  "source_subdir": "skills/nature-paper-to-patent",
+  "imported_at": 1782454065
+}

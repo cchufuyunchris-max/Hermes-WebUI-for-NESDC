@@ -497,6 +497,12 @@ def pre_spawn_hook(spawner):
         "HERMES_HOST_USER_DATA_ROOT",
         os.environ.get("HERMES_USER_DATA_ROOT", "/srv/hermes/users"),
     )
+    user_data_dir = Path(user_data_root) / slug
+    runtime_uid = int(os.environ.get("HERMES_RUNTIME_UID", "1000"))
+    runtime_gid = int(os.environ.get("HERMES_RUNTIME_GID", "1000"))
+    user_data_dir.mkdir(parents=True, exist_ok=True)
+    os.chown(user_data_dir, runtime_uid, runtime_gid)
+    os.chmod(user_data_dir, 0o700)
     spawner.volumes = {
         f"{user_data_root}/{slug}": "/home/hermes/data",
     }

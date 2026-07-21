@@ -138,6 +138,8 @@ JUPYTERHUB_URL=https://hermes.example.com
 HERMES_ADMIN_URL=https://hermes-admin.example.com
 HERMES_ADMIN_PASSWORD=replace-with-strong-password
 HERMES_ADMIN_API_TOKEN=replace-with-random-token
+HERMES_RUNTIME_UID=1000
+HERMES_RUNTIME_GID=1000
 HERMES_SPAWN_HTTP_TIMEOUT=300
 HERMES_SPAWN_START_TIMEOUT=300
 MODEL_PROVIDER=openai-compatible
@@ -384,6 +386,28 @@ docker ps -a --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}' | 
 docker logs --tail=200 jupyter-用户名
 docker compose --env-file configs/server.env -f docker-compose.server.yml logs --tail=200 jupyterhub
 ```
+
+如果 `jupyterhub` 日志里出现 `Created container jupyter-admin`，随后又出现
+`Container 'jupyter-admin' is gone`，通常说明用户容器启动后马上退出。最常见原因是
+宿主机用户目录权限不对，容器内的 `hermes` 用户不能写 `/home/hermes/data`。
+
+先确认 `configs/server.env` 中的 runtime 用户 ID：
+
+```env
+HERMES_RUNTIME_UID=1000
+HERMES_RUNTIME_GID=1000
+```
+
+然后修复已有用户目录权限：
+
+```sh
+sudo chown -R 1000:1000 /srv/hermes/users
+sudo chmod -R u+rwX,go-rwx /srv/hermes/users
+docker compose --env-file configs/server.env -f docker-compose.server.yml up -d --build
+```
+
+新版本的 JupyterHub pre-spawn hook 会在启动用户容器前自动创建用户目录，并把该目录
+设置为 runtime 用户可写。
 
 如果用户容器日志里已经出现：
 

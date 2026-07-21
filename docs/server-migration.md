@@ -138,6 +138,8 @@ JUPYTERHUB_URL=https://hermes.example.com
 HERMES_ADMIN_URL=https://hermes-admin.example.com
 HERMES_ADMIN_PASSWORD=replace-with-strong-password
 HERMES_ADMIN_API_TOKEN=replace-with-random-token
+HERMES_SPAWN_HTTP_TIMEOUT=300
+HERMES_SPAWN_START_TIMEOUT=300
 MODEL_PROVIDER=openai-compatible
 MODEL_BASE_URL=https://your-model-gateway.example.com/v1
 MODEL_API_KEY=
@@ -352,3 +354,45 @@ systemctl is-enabled hermes-webui
 systemctl status hermes-webui
 ```
 
+## 13. 用户容器启动超时
+
+如果 JupyterHub 创建用户 server 时提示：
+
+```text
+didn't respond in 120 s
+```
+
+先把 `configs/server.env` 里的超时调高：
+
+```env
+HERMES_SPAWN_HTTP_TIMEOUT=300
+HERMES_SPAWN_START_TIMEOUT=300
+```
+
+然后重建 JupyterHub：
+
+```sh
+docker compose --env-file configs/server.env -f docker-compose.server.yml up -d --force-recreate jupyterhub
+```
+
+再重试启动用户 server。
+
+如果仍然超时，查看用户容器是否已经创建以及日志：
+
+```sh
+docker ps -a --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}' | grep jupyter
+docker logs --tail=200 jupyter-用户名
+docker compose --env-file configs/server.env -f docker-compose.server.yml logs --tail=200 jupyterhub
+```
+
+如果用户容器日志里已经出现：
+
+```text
+Hermes Web UI listening on http://0.0.0.0:8080
+```
+
+说明容器启动成功，只是 JupyterHub 等待时间太短或代理探测较慢。继续提高
+`HERMES_SPAWN_HTTP_TIMEOUT` 到 `600` 即可。
+
+如果用户容器退出，重点看 `docker logs jupyter-用户名` 里的 Python traceback、
+权限错误、挂载目录错误或模型/策略配置错误。

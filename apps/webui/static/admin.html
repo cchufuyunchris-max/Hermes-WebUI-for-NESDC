@@ -159,6 +159,22 @@
         </div>
         <div id="connectorsList" class="connector-list"></div>
       </div>
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Dify Knowledge 管理</h2>
+            <p class="panel-hint">用于维护 90 个野外站到 Dify Knowledge dataset_id 的映射。API Key 只保存在后端策略文件中，不应放到前端页面或主平台 iframe。</p>
+          </div>
+          <button id="addDifyStationBtn" class="ghost-btn" type="button">新增站点</button>
+        </div>
+        <div class="form-grid">
+          <label><input id="difyKnowledgeEnabled" type="checkbox"> 启用 Dify Knowledge</label>
+          <label>DIFY_BASE_URL<input id="difyKnowledgeBaseUrl" placeholder="http://dify.internal/v1"></label>
+          <label>DIFY_API_KEY<input id="difyKnowledgeApiKey" type="password" placeholder="********"></label>
+          <label>默认 top_k<input id="difyKnowledgeTopK" type="number" min="1" step="1" placeholder="5"></label>
+        </div>
+        <div id="difyStationsList" class="station-list"></div>
+      </div>
     </section>
 
     <section class="section" id="section-resources">
@@ -265,6 +281,24 @@
       </div>
       <label class="full-label">MCP Env JSON<textarea data-field="mcp_env" spellcheck="false" placeholder='{"CLICKHOUSE_READONLY":"1"}'></textarea></label>
     </details>
+  </article>
+</template>
+
+<template id="difyStationTemplate">
+  <article class="station-card">
+    <div class="station-head">
+      <strong class="station-title">站点</strong>
+      <div class="connector-actions">
+        <label><input data-field="enabled" type="checkbox"> 启用</label>
+        <button data-action="remove" class="icon-btn" type="button" title="删除">×</button>
+      </div>
+    </div>
+    <div class="form-grid station-grid">
+      <label>站点 ID<input data-field="station_id" placeholder="changbaishan"></label>
+      <label>站点名称<input data-field="station_name" placeholder="长白山站"></label>
+      <label>dataset_id<input data-field="dataset_id" placeholder="Dify Knowledge UUID"></label>
+      <label>标签/备注<input data-field="tags" placeholder="文献,标准,专著"></label>
+    </div>
   </article>
 </template>
 

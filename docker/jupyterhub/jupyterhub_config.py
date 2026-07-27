@@ -366,6 +366,18 @@ def apply_runtime_policy(spawner, policy: dict, slug: str) -> None:
             }
         )
 
+    dify_knowledge = policy.get("dify_knowledge")
+    if isinstance(dify_knowledge, dict) and dify_knowledge.get("enabled") is True:
+        stations = dify_knowledge.get("stations") if isinstance(dify_knowledge.get("stations"), list) else []
+        enabled_stations = [
+            station for station in stations
+            if isinstance(station, dict) and station.get("enabled", True) is not False
+        ]
+        env_updates["DIFY_KNOWLEDGE_BASE_URL"] = policy_env_value(dify_knowledge.get("base_url"))
+        env_updates["DIFY_KNOWLEDGE_API_KEY"] = policy_env_value(dify_knowledge.get("api_key"))
+        env_updates["DIFY_KNOWLEDGE_TOP_K"] = policy_env_value(dify_knowledge.get("top_k") or 5)
+        env_updates["DIFY_KNOWLEDGE_STATIONS_JSON"] = json.dumps(enabled_stations, ensure_ascii=False)
+
     recommended_skills_root = policy.get("recommended_skills_root")
     if recommended_skills_root:
         spawner.volumes[str(recommended_skills_root)] = {
@@ -615,6 +627,10 @@ c.DockerSpawner.environment = {
     "DIFY_API_KEY": os.environ.get("DIFY_API_KEY", ""),
     "DIFY_APP_ID": os.environ.get("DIFY_APP_ID", ""),
     "DIFY_PRIVACY_LEVEL": os.environ.get("DIFY_PRIVACY_LEVEL", "public"),
+    "DIFY_KNOWLEDGE_BASE_URL": os.environ.get("DIFY_KNOWLEDGE_BASE_URL", ""),
+    "DIFY_KNOWLEDGE_API_KEY": os.environ.get("DIFY_KNOWLEDGE_API_KEY", ""),
+    "DIFY_KNOWLEDGE_TOP_K": os.environ.get("DIFY_KNOWLEDGE_TOP_K", "5"),
+    "DIFY_KNOWLEDGE_STATIONS_JSON": os.environ.get("DIFY_KNOWLEDGE_STATIONS_JSON", "[]"),
     "CLICKHOUSE_HOST": os.environ.get("CLICKHOUSE_HOST", ""),
     "CLICKHOUSE_PORT": os.environ.get("CLICKHOUSE_PORT", ""),
     "CLICKHOUSE_DATABASE": os.environ.get("CLICKHOUSE_DATABASE", ""),

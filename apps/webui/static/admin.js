@@ -86,6 +86,10 @@
     policy.data_connectors.connectors = Array.isArray(policy.data_connectors.connectors)
       ? policy.data_connectors.connectors
       : [];
+    policy.dify_knowledge = policy.dify_knowledge || {};
+    policy.dify_knowledge.stations = Array.isArray(policy.dify_knowledge.stations)
+      ? policy.dify_knowledge.stations
+      : [];
     return policy;
   }
 
@@ -94,6 +98,7 @@
     const mp = policy.model_policy;
     const dc = policy.data_connectors;
     const res = policy.resources;
+    const dk = policy.dify_knowledge;
 
     $('policyPath').textContent = state.meta.path || 'Policy';
     $('enabled').checked = policy.enabled !== false;
@@ -123,6 +128,10 @@
     $('auditEnabled').checked = dc.audit.enabled !== false;
     $('auditPath').value = dc.audit.log_path || '/home/hermes/data/audit/data-tools.jsonl';
     $('enforceManagedMcp').checked = dc.enforce_managed_mcp_servers !== false;
+    $('difyKnowledgeEnabled').checked = dk.enabled === true;
+    $('difyKnowledgeBaseUrl').value = dk.base_url || '';
+    $('difyKnowledgeApiKey').value = dk.api_key || '';
+    $('difyKnowledgeTopK').value = dk.top_k ?? '';
 
     $('metricEnabled').textContent = policy.enabled === false ? '禁用' : '启用';
     $('metricDefaultTier').textContent = mp.default_tier || 'safe';
@@ -130,6 +139,7 @@
     $('metricAudit').textContent = dc.audit.enabled === false ? '关闭' : '开启';
 
     renderConnectors();
+    renderDifyStations();
     $('rawJson').value = JSON.stringify(policy, null, 2);
   }
 
@@ -138,6 +148,7 @@
     const mp = policy.model_policy;
     const res = policy.resources;
     const dc = policy.data_connectors;
+    const dk = policy.dify_knowledge;
 
     policy.enabled = $('enabled').checked;
     mp.runtime_privacy_guard_enabled = $('runtimePrivacyGuard').checked;
@@ -172,6 +183,13 @@
     dc.audit.log_path = $('auditPath').value.trim() || '/home/hermes/data/audit/data-tools.jsonl';
     dc.enforce_managed_mcp_servers = $('enforceManagedMcp').checked;
     dc.connectors = readConnectors();
+    dk.enabled = $('difyKnowledgeEnabled').checked;
+    dk.base_url = $('difyKnowledgeBaseUrl').value.trim();
+    dk.api_key = $('difyKnowledgeApiKey').value.trim();
+    const topK = $('difyKnowledgeTopK').value.trim();
+    if (topK) dk.top_k = Number(topK) || topK;
+    else delete dk.top_k;
+    dk.stations = readDifyStations();
     return policy;
   }
 
@@ -305,6 +323,57 @@
       }
       return conn;
     });
+  }
+
+  function renderDifyStations() {
+    const list = $('difyStationsList');
+    list.innerHTML = '';
+    const tmpl = $('difyStationTemplate');
+    const stations = ensurePolicyShape(state.policy).dify_knowledge.stations;
+    stations.forEach((station, index) => {
+      const node = tmpl.content.firstElementChild.cloneNode(true);
+      node.dataset.index = String(index);
+      node.querySelector('.station-title').textContent = station.station_name || station.station_id || `站点 ${index + 1}`;
+      setField(node, 'enabled', station.enabled !== false);
+      setField(node, 'station_id', station.station_id || '');
+      setField(node, 'station_name', station.station_name || '');
+      setField(node, 'dataset_id', station.dataset_id || '');
+      setField(node, 'tags', Array.isArray(station.tags) ? station.tags.join(',') : (station.tags || ''));
+      node.querySelector('[data-action="remove"]').addEventListener('click', () => {
+        state.policy.dify_knowledge.stations.splice(index, 1);
+        renderAll();
+      });
+      node.addEventListener('input', () => {
+        state.policy.dify_knowledge.stations = readDifyStations();
+        $('rawJson').value = JSON.stringify(state.policy, null, 2);
+      });
+      node.addEventListener('change', () => {
+        state.policy.dify_knowledge.stations = readDifyStations();
+        $('rawJson').value = JSON.stringify(state.policy, null, 2);
+        renderDifyStations();
+      });
+      list.appendChild(node);
+    });
+    if (!stations.length) {
+      const empty = document.createElement('div');
+      empty.className = 'status-bar';
+      empty.textContent = '还没有 Dify Knowledge 站点映射。点击“新增站点”后填写站点名称和 dataset_id。';
+      list.appendChild(empty);
+    }
+  }
+
+  function readDifyStations() {
+    return Array.from(document.querySelectorAll('.station-card')).map(card => {
+      const station = {
+        enabled: getField(card, 'enabled'),
+        station_id: getField(card, 'station_id'),
+        station_name: getField(card, 'station_name'),
+        dataset_id: getField(card, 'dataset_id')
+      };
+      const tags = asList(getField(card, 'tags'));
+      if (tags.length) station.tags = tags;
+      return station;
+    }).filter(station => station.station_id || station.station_name || station.dataset_id);
   }
 
   function isDatabaseType(type) {
@@ -778,6 +847,18 @@
     renderAll();
   }
 
+  function addDifyStation() {
+    state.policy = readFormIntoPolicy();
+    state.policy.dify_knowledge.stations.push({
+      enabled: true,
+      station_id: '',
+      station_name: '',
+      dataset_id: '',
+      tags: []
+    });
+    renderAll();
+  }
+
   function escapeHtml(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({
       '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -797,6 +878,7 @@
     $('saveBtn').addEventListener('click', savePolicy);
     $('applyAllBtn').addEventListener('click', rebuildAllUserRuntimes);
     $('addConnectorBtn').addEventListener('click', addConnector);
+    $('addDifyStationBtn').addEventListener('click', addDifyStation);
     $('reloadSkillsBtn').addEventListener('click', loadAdminSkills);
     $('newSkillBtn').addEventListener('click', newAdminSkill);
     $('saveSkillBtn').addEventListener('click', saveAdminSkill);

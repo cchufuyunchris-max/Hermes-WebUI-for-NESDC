@@ -73,7 +73,7 @@ input[type="checkbox"]{width:16px;height:16px;padding:0;accent-color:var(--accen
 .import-result.ok{border-color:rgba(22,121,91,.3);color:var(--accent);background:#edf8f4}
 .import-result.err{border-color:rgba(180,35,24,.28);color:var(--danger);background:#fff1ef}
 .connector-toolbar{display:grid;grid-template-columns:max-content max-content minmax(260px,1fr);gap:12px;align-items:center;margin-bottom:14px}
-.connector-list{display:flex;flex-direction:column;gap:12px}
+.connector-list,.station-list{display:flex;flex-direction:column;gap:12px}
 .skill-admin-layout{display:grid;grid-template-columns:320px minmax(0,1fr);gap:14px;align-items:start}
 .admin-skill-list{display:flex;flex-direction:column;gap:8px;max-height:680px;overflow:auto}
 .admin-user-table{overflow:auto;border:1px solid var(--border);border-radius:var(--radius);background:#fff}
@@ -114,11 +114,13 @@ input[type="checkbox"]{width:16px;height:16px;padding:0;accent-color:var(--accen
 .user-editor-panel summary{cursor:pointer;font-weight:800;color:var(--accent);margin-bottom:12px}
 #skillContent{width:100%;min-height:440px;font-family:"SF Mono",ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
 .danger-btn{color:var(--danger);border-color:rgba(180,35,24,.3)}
-.connector-card{border:1px solid var(--border);border-radius:var(--radius);background:#fbfcfc;padding:14px}
-.connector-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.connector-card,.station-card{border:1px solid var(--border);border-radius:var(--radius);background:#fbfcfc;padding:14px}
+.connector-head,.station-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
 .connector-title{display:block;font-size:15px}
+.station-title{display:block;font-size:15px}
 .connector-sub{display:block;color:var(--muted);font-size:12px;margin-top:2px}
 .connector-actions{display:flex;align-items:center;gap:10px}
+.station-grid{grid-template-columns:1fr 1.2fr 2fr 1.2fr}
 .mcp-box{margin-top:12px;border-top:1px solid var(--border);padding-top:10px}
 .mcp-box summary{cursor:pointer;color:var(--accent);font-weight:700;margin-bottom:10px}
 #rawJson{width:100%;min-height:560px;font-family:"SF Mono",ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}

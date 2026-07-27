@@ -57,6 +57,11 @@ data_connectors.audit.enabled
 data_connectors.audit.log_path
 data_connectors.enforce_managed_mcp_servers
 data_connectors.connectors[]
+dify_knowledge.enabled
+dify_knowledge.base_url
+dify_knowledge.api_key
+dify_knowledge.top_k
+dify_knowledge.stations[]
 recommended_skills_root
 ```
 
@@ -426,6 +431,46 @@ tier=fast
 7. 校验数据库 connector 只读，并托管 MCP servers
 8. 可选覆盖 recommended_skills_root 挂载
 ```
+
+## Dify Knowledge 站点映射
+
+Admin WebUI 的“数据连接 -> Dify Knowledge 管理”用于维护野外站知识库映射。
+推荐把 Dify 当作知识库检索层，把 Hermes 当作对话、分析、制图和文件生成层。
+
+全局策略保存为：
+
+```json
+{
+  "dify_knowledge": {
+    "enabled": true,
+    "base_url": "http://dify.internal/v1",
+    "api_key": "********",
+    "top_k": 5,
+    "stations": [
+      {
+        "enabled": true,
+        "station_id": "changbaishan",
+        "station_name": "长白山站",
+        "dataset_id": "00000000-0000-0000-0000-000000000000",
+        "tags": ["文献", "标准", "专著"]
+      }
+    ]
+  }
+}
+```
+
+用户容器 Spawn 时会注入：
+
+```text
+DIFY_KNOWLEDGE_BASE_URL
+DIFY_KNOWLEDGE_API_KEY
+DIFY_KNOWLEDGE_TOP_K
+DIFY_KNOWLEDGE_STATIONS_JSON
+```
+
+Dify 官方建议 API Key 只在服务端保存，不要放到浏览器前端。当前内测方案把 Key
+注入用户 runtime 容器，适合小范围可信内测；正式上线更推荐由 Admin/内部 proxy
+持有 Dify Key，用户容器只调用受控的检索工具。
 
 ## 本地验证
 

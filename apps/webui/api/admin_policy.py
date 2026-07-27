@@ -294,6 +294,13 @@ def default_policy() -> dict[str, Any]:
             "enforce_managed_mcp_servers": True,
             "connectors": [],
         },
+        "dify_knowledge": {
+            "enabled": False,
+            "base_url": "",
+            "api_key": "",
+            "top_k": 5,
+            "stations": [],
+        },
     }
 
 
@@ -308,6 +315,19 @@ def normalize_policy(policy: dict[str, Any]) -> dict[str, Any]:
     dc.setdefault("enforce_managed_mcp_servers", True)
     connectors = dc.get("connectors")
     dc["connectors"] = connectors if isinstance(connectors, list) else []
+    dk = merged.setdefault("dify_knowledge", {})
+    if not isinstance(dk, dict):
+        dk = {"enabled": False, "base_url": "", "api_key": "", "stations": []}
+        merged["dify_knowledge"] = dk
+    dk["enabled"] = dk.get("enabled") is True
+    dk["base_url"] = str(dk.get("base_url") or "").strip()
+    dk["api_key"] = str(dk.get("api_key") or "")
+    try:
+        dk["top_k"] = max(1, int(dk.get("top_k") or 5))
+    except (TypeError, ValueError):
+        dk["top_k"] = 5
+    stations = dk.get("stations")
+    dk["stations"] = stations if isinstance(stations, list) else []
     return merged
 
 

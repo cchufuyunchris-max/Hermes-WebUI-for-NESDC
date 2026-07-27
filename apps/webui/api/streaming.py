@@ -492,6 +492,51 @@ def _webui_surface_context_prompt(surface_context: Optional[dict]) -> str:
     return "\n".join(lines)
 
 
+def _webui_managed_knowledge_prompt() -> str:
+    """Return safe guidance for administrator-managed Dify Knowledge."""
+    base_url = str(os.environ.get("DIFY_KNOWLEDGE_BASE_URL") or "").strip()
+    if not base_url:
+        return ""
+
+    raw_stations = str(os.environ.get("DIFY_KNOWLEDGE_STATIONS_JSON") or "").strip()
+    try:
+        stations = json.loads(raw_stations) if raw_stations else []
+    except Exception:
+        stations = []
+    if not isinstance(stations, list):
+        stations = []
+
+    station_lines: list[str] = []
+    for item in stations[:120]:
+        if not isinstance(item, dict) or item.get("enabled", True) is False:
+            continue
+        station_id = str(item.get("station_id") or "").strip()
+        station_name = str(item.get("station_name") or "").strip()
+        dataset_id = str(item.get("dataset_id") or "").strip()
+        tags = item.get("tags") if isinstance(item.get("tags"), list) else []
+        tags_text = ",".join(str(tag).strip() for tag in tags if str(tag).strip())
+        label = " / ".join(part for part in (station_name, station_id) if part)
+        if label and dataset_id:
+            suffix = f" tags={tags_text}" if tags_text else ""
+            station_lines.append(f"- {label}: dataset_id={dataset_id}{suffix}")
+
+    lines = [
+        "Administrator-managed Dify Knowledge is configured for this runtime.",
+        "- For user requests about station literature, standards, monographs, reports, or station knowledge, first check the station mapping below before saying no knowledge base is configured.",
+        "- Do not ask the user to provide Dify base URL, API key, or dataset_id when a matching station is listed here.",
+        "- Use the runtime environment variables `DIFY_KNOWLEDGE_BASE_URL`, `DIFY_KNOWLEDGE_API_KEY`, `DIFY_KNOWLEDGE_TOP_K`, and the matching station `dataset_id` for read-only retrieval.",
+        "- The normal Dify Knowledge retrieval endpoint is `POST {DIFY_KNOWLEDGE_BASE_URL}/datasets/{dataset_id}/retrieve` with `Authorization: Bearer {DIFY_KNOWLEDGE_API_KEY}` and a JSON query payload; use `GET {DIFY_KNOWLEDGE_BASE_URL}/datasets/{dataset_id}/documents` only when listing documents is needed.",
+        "- Never reveal `DIFY_KNOWLEDGE_API_KEY` or print authorization headers.",
+        f"- Dify Knowledge privacy level: {os.environ.get('DIFY_KNOWLEDGE_PRIVACY_LEVEL', 'public') or 'public'}; access mode: {os.environ.get('DIFY_KNOWLEDGE_ACCESS_MODE', 'read-only') or 'read-only'}.",
+    ]
+    if station_lines:
+        lines.append("Available station knowledge datasets:")
+        lines.extend(station_lines)
+    else:
+        lines.append("No station dataset mapping is currently listed in `DIFY_KNOWLEDGE_STATIONS_JSON`; ask the administrator to add station dataset mappings.")
+    return "\n".join(lines)
+
+
 def _webui_ephemeral_system_prompt(
     personality_prompt: Optional[str],
     surface_context: Optional[dict] = None,
@@ -506,6 +551,9 @@ def _webui_ephemeral_system_prompt(
         parts.append(surface_prompt)
     parts.append(_WEBUI_PROGRESS_PROMPT)
     parts.append(_WEBUI_PRIVACY_MODEL_PROMPT)
+    managed_knowledge_prompt = _webui_managed_knowledge_prompt()
+    if managed_knowledge_prompt:
+        parts.append(managed_knowledge_prompt)
     delivery_prompt = _webui_delivery_context_prompt(config_data)
     if delivery_prompt:
         parts.append(delivery_prompt)

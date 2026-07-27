@@ -486,6 +486,16 @@ dify_knowledge.access_mode=read-only
 会被视为已批准的 Dify Knowledge API 调用。数据库写入、交互式数据库客户端、未知外联、
 低层 socket/ssh 等仍然保持拦截。
 
+WebUI 会把站点映射作为临时运行提示注入给 Agent。用户询问某个站点的文献、标准、
+专著或知识库内容时，Agent 应优先查找 `DIFY_KNOWLEDGE_STATIONS_JSON` 中的站点映射，
+并使用匹配的 `dataset_id` 调用 Dify Knowledge API，而不是要求用户再次提供地址、Key
+或 dataset_id。常用只读接口：
+
+```text
+POST {DIFY_KNOWLEDGE_BASE_URL}/datasets/{dataset_id}/retrieve
+GET  {DIFY_KNOWLEDGE_BASE_URL}/datasets/{dataset_id}/documents
+```
+
 Dify 官方建议 API Key 只在服务端保存，不要放到浏览器前端。当前内测方案把 Key
 注入用户 runtime 容器，适合小范围可信内测；正式上线更推荐由 Admin/内部 proxy
 持有 Dify Key，用户容器只调用受控的检索工具。

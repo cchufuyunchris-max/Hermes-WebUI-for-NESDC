@@ -131,6 +131,7 @@
     $('difyKnowledgeEnabled').checked = dk.enabled === true;
     $('difyKnowledgeBaseUrl').value = dk.base_url || '';
     $('difyKnowledgeApiKey').value = dk.api_key || '';
+    $('difyKnowledgePrivacyLevel').value = dk.privacy_level || 'public';
     $('difyKnowledgeTopK').value = dk.top_k ?? '';
 
     $('metricEnabled').textContent = policy.enabled === false ? '禁用' : '启用';
@@ -186,6 +187,8 @@
     dk.enabled = $('difyKnowledgeEnabled').checked;
     dk.base_url = $('difyKnowledgeBaseUrl').value.trim();
     dk.api_key = $('difyKnowledgeApiKey').value.trim();
+    dk.privacy_level = $('difyKnowledgePrivacyLevel').value || 'public';
+    dk.access_mode = 'read-only';
     const topK = $('difyKnowledgeTopK').value.trim();
     if (topK) dk.top_k = Number(topK) || topK;
     else delete dk.top_k;

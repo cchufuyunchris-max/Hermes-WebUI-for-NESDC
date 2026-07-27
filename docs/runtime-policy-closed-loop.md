@@ -445,6 +445,8 @@ Admin WebUI 的“数据连接 -> Dify Knowledge 管理”用于维护野外站�
     "enabled": true,
     "base_url": "http://dify.internal/v1",
     "api_key": "********",
+    "privacy_level": "public",
+    "access_mode": "read-only",
     "top_k": 5,
     "stations": [
       {
@@ -464,9 +466,25 @@ Admin WebUI 的“数据连接 -> Dify Knowledge 管理”用于维护野外站�
 ```text
 DIFY_KNOWLEDGE_BASE_URL
 DIFY_KNOWLEDGE_API_KEY
+DIFY_KNOWLEDGE_PRIVACY_LEVEL
+DIFY_KNOWLEDGE_ACCESS_MODE
 DIFY_KNOWLEDGE_TOP_K
 DIFY_KNOWLEDGE_STATIONS_JSON
+HERMES_APPROVED_CONNECTOR_BASE_URLS
 ```
+
+Dify Knowledge 不强制要求 MCP。管理员在 Admin WebUI 填入 `base_url` 和
+`api_key` 后，Runtime 会把该 Dify 地址登记为管理员批准的只读知识源：
+
+```text
+dify_knowledge.privacy_level=public
+dify_knowledge.access_mode=read-only
+```
+
+在运行时隐私保护开启的情况下，终端/代码里的未知网络访问仍会被拦截；但如果访问的是
+`DIFY_KNOWLEDGE_BASE_URL` 或 `HERMES_APPROVED_CONNECTOR_BASE_URLS` 中的地址，
+会被视为已批准的 Dify Knowledge API 调用。数据库写入、交互式数据库客户端、未知外联、
+低层 socket/ssh 等仍然保持拦截。
 
 Dify 官方建议 API Key 只在服务端保存，不要放到浏览器前端。当前内测方案把 Key
 注入用户 runtime 容器，适合小范围可信内测；正式上线更推荐由 Admin/内部 proxy

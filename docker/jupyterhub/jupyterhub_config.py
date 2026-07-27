@@ -80,6 +80,14 @@ def policy_csv_value(value) -> str:
     return str(value)
 
 
+def append_csv_value(current: str, value: str) -> str:
+    items = [item.strip() for item in str(current or "").split(",") if item.strip()]
+    item = str(value or "").strip()
+    if item and item not in items:
+        items.append(item)
+    return ",".join(items)
+
+
 READONLY_MODES = {"read", "readonly", "read-only", "ro", "select-only"}
 DATABASE_CONNECTOR_TYPES = {
     "clickhouse",
@@ -350,6 +358,11 @@ def apply_runtime_policy(spawner, policy: dict, slug: str) -> None:
                 "DIFY_PRIVACY_LEVEL": policy_env_value(dify.get("privacy_level") or "public"),
             }
         )
+        env_updates["HERMES_APPROVED_CONNECTOR_BASE_URLS"] = append_csv_value(
+            env_updates.get("HERMES_APPROVED_CONNECTOR_BASE_URLS")
+            or os.environ.get("HERMES_APPROVED_CONNECTOR_BASE_URLS", ""),
+            dify.get("base_url"),
+        )
 
     clickhouse = connector_by_type(connectors, "clickhouse")
     if clickhouse:
@@ -375,8 +388,15 @@ def apply_runtime_policy(spawner, policy: dict, slug: str) -> None:
         ]
         env_updates["DIFY_KNOWLEDGE_BASE_URL"] = policy_env_value(dify_knowledge.get("base_url"))
         env_updates["DIFY_KNOWLEDGE_API_KEY"] = policy_env_value(dify_knowledge.get("api_key"))
+        env_updates["DIFY_KNOWLEDGE_PRIVACY_LEVEL"] = policy_env_value(dify_knowledge.get("privacy_level") or "public")
+        env_updates["DIFY_KNOWLEDGE_ACCESS_MODE"] = "read-only"
         env_updates["DIFY_KNOWLEDGE_TOP_K"] = policy_env_value(dify_knowledge.get("top_k") or 5)
         env_updates["DIFY_KNOWLEDGE_STATIONS_JSON"] = json.dumps(enabled_stations, ensure_ascii=False)
+        env_updates["HERMES_APPROVED_CONNECTOR_BASE_URLS"] = append_csv_value(
+            env_updates.get("HERMES_APPROVED_CONNECTOR_BASE_URLS")
+            or os.environ.get("HERMES_APPROVED_CONNECTOR_BASE_URLS", ""),
+            dify_knowledge.get("base_url"),
+        )
 
     recommended_skills_root = policy.get("recommended_skills_root")
     if recommended_skills_root:
@@ -610,6 +630,7 @@ c.DockerSpawner.environment = {
     "HERMES_PUBLIC_MCP_TOOL_PREFIXES": os.environ.get("HERMES_PUBLIC_MCP_TOOL_PREFIXES", ""),
     "HERMES_ALLOW_TERMINAL_NETWORK": os.environ.get("HERMES_ALLOW_TERMINAL_NETWORK", "false"),
     "HERMES_ALLOW_CODE_NETWORK": os.environ.get("HERMES_ALLOW_CODE_NETWORK", "false"),
+    "HERMES_APPROVED_CONNECTOR_BASE_URLS": os.environ.get("HERMES_APPROVED_CONNECTOR_BASE_URLS", ""),
     "HERMES_ALLOWED_DATA_CONNECTORS": os.environ.get("HERMES_ALLOWED_DATA_CONNECTORS", ""),
     "HERMES_DATA_CONNECTORS_JSON": os.environ.get("HERMES_DATA_CONNECTORS_JSON", ""),
     "HERMES_DATA_AUDIT_ENABLED": os.environ.get("HERMES_DATA_AUDIT_ENABLED", "true"),
@@ -629,6 +650,8 @@ c.DockerSpawner.environment = {
     "DIFY_PRIVACY_LEVEL": os.environ.get("DIFY_PRIVACY_LEVEL", "public"),
     "DIFY_KNOWLEDGE_BASE_URL": os.environ.get("DIFY_KNOWLEDGE_BASE_URL", ""),
     "DIFY_KNOWLEDGE_API_KEY": os.environ.get("DIFY_KNOWLEDGE_API_KEY", ""),
+    "DIFY_KNOWLEDGE_PRIVACY_LEVEL": os.environ.get("DIFY_KNOWLEDGE_PRIVACY_LEVEL", "public"),
+    "DIFY_KNOWLEDGE_ACCESS_MODE": os.environ.get("DIFY_KNOWLEDGE_ACCESS_MODE", "read-only"),
     "DIFY_KNOWLEDGE_TOP_K": os.environ.get("DIFY_KNOWLEDGE_TOP_K", "5"),
     "DIFY_KNOWLEDGE_STATIONS_JSON": os.environ.get("DIFY_KNOWLEDGE_STATIONS_JSON", "[]"),
     "CLICKHOUSE_HOST": os.environ.get("CLICKHOUSE_HOST", ""),

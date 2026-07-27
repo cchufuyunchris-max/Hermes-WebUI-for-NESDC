@@ -95,6 +95,16 @@ def managed_connectors() -> list[dict[str, Any]]:
                 "access_mode": "read-only",
             }
         )
+    if os.environ.get("DIFY_KNOWLEDGE_BASE_URL"):
+        legacy.append(
+            {
+                "id": "dify-knowledge",
+                "type": "knowledge_base",
+                "enabled": True,
+                "privacy_level": os.environ.get("DIFY_KNOWLEDGE_PRIVACY_LEVEL", "public"),
+                "access_mode": os.environ.get("DIFY_KNOWLEDGE_ACCESS_MODE", "read-only"),
+            }
+        )
     return legacy
 
 

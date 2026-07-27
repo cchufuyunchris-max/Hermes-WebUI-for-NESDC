@@ -298,6 +298,8 @@ def default_policy() -> dict[str, Any]:
             "enabled": False,
             "base_url": "",
             "api_key": "",
+            "privacy_level": "public",
+            "access_mode": "read-only",
             "top_k": 5,
             "stations": [],
         },
@@ -322,6 +324,9 @@ def normalize_policy(policy: dict[str, Any]) -> dict[str, Any]:
     dk["enabled"] = dk.get("enabled") is True
     dk["base_url"] = str(dk.get("base_url") or "").strip()
     dk["api_key"] = str(dk.get("api_key") or "")
+    privacy_level = str(dk.get("privacy_level") or "public").strip().lower()
+    dk["privacy_level"] = privacy_level if privacy_level in {"public", "private"} else "public"
+    dk["access_mode"] = "read-only"
     try:
         dk["top_k"] = max(1, int(dk.get("top_k") or 5))
     except (TypeError, ValueError):

@@ -6,6 +6,7 @@ import json
 import os
 import re
 from typing import Iterable
+from urllib.parse import urlparse
 
 
 def _env_truthy(name: str, default: str = "true") -> bool:
@@ -58,6 +59,8 @@ CODE_NETWORK_RE = re.compile(
     r"\b(requests|httpx|urllib|aiohttp|socket|paramiko|ftplib|smtplib)\b",
     re.IGNORECASE,
 )
+HTTP_URL_RE = re.compile(r"https?://[^\s'\"<>)]+", re.IGNORECASE)
+LOW_LEVEL_NETWORK_RE = re.compile(r"\b(socket|paramiko|ftplib|smtplib)\b", re.IGNORECASE)
 
 
 def privacy_guard_enabled() -> bool:
@@ -134,6 +137,42 @@ def _code_text(args: dict) -> str:
     return ""
 
 
+def _approved_connector_hosts() -> set[str]:
+    hosts: set[str] = set()
+    for env_name in (
+        "HERMES_APPROVED_CONNECTOR_BASE_URLS",
+        "DIFY_KNOWLEDGE_BASE_URL",
+        "DIFY_BASE_URL",
+    ):
+        for value in _csv(env_name, ""):
+            parsed = urlparse(value)
+            if parsed.hostname:
+                hosts.add(parsed.hostname.lower())
+    return hosts
+
+
+def _uses_approved_connector_url(text: str) -> bool:
+    if not text:
+        return False
+    approved_hosts = _approved_connector_hosts()
+    if not approved_hosts:
+        return False
+    if LOW_LEVEL_NETWORK_RE.search(text):
+        return False
+    urls = HTTP_URL_RE.findall(text)
+    for url in urls:
+        parsed = urlparse(url)
+        if parsed.hostname and parsed.hostname.lower() not in approved_hosts:
+            return False
+    env_refs = (
+        "DIFY_KNOWLEDGE_BASE_URL",
+        "DIFY_BASE_URL",
+        "HERMES_APPROVED_CONNECTOR_BASE_URLS",
+    )
+    lowered = text.lower()
+    return any(ref in text for ref in env_refs) or any(host in lowered for host in approved_hosts)
+
+
 def _json_error(message: str, code: str = "webui_privacy_policy") -> str:
     return json.dumps({"error": message, "code": code, "blocked_by": "webui_runtime_privacy_guard"}, ensure_ascii=False)
 
@@ -191,6 +230,8 @@ def tool_call_block_message(
         if db_block:
             return _json_error(db_block, "database_write_or_interactive_client_blocked")
         if not _env_truthy("HERMES_ALLOW_TERMINAL_NETWORK", "false") and TERMINAL_NETWORK_RE.search(command):
+            if _uses_approved_connector_url(command):
+                return None
             return _json_error(
                 "Outbound network commands are blocked from the terminal in managed Hermes Runtime. "
                 "Use approved Web/search tools or an administrator-managed connector.",
@@ -205,6 +246,8 @@ def tool_call_block_message(
                 "code_database_write_blocked",
             )
         if not _env_truthy("HERMES_ALLOW_CODE_NETWORK", "false") and CODE_NETWORK_RE.search(code):
+            if _uses_approved_connector_url(code):
+                return None
             return _json_error(
                 "Network-capable code is blocked in managed Hermes Runtime. Use approved connectors instead.",
                 "code_network_blocked",
